@@ -78,6 +78,7 @@
     display: inline-flex; align-items: center; gap: 8px; margin-top: 10px;
     color: var(--muted); font-size: .95rem; cursor: pointer; user-select: none;
   }
+  .opts { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 18px; }
   .showpw input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
 </style>
 </head>
@@ -96,7 +97,11 @@
   <div class="card center" id="login">
     <p class="big" style="margin:0 0 6px">🔒 أدخل كلمة المرور للمتابعة</p>
     <input class="pw" id="pw" type="password" autocomplete="current-password" placeholder="كلمة المرور">
-    <label class="showpw"><input type="checkbox" id="showPw"> إظهار كلمة المرور</label>
+    <div class="opts">
+      <label class="showpw"><input type="checkbox" id="showPw"> إظهار كلمة المرور</label>
+      <label class="showpw"><input type="checkbox" id="remember"> تذكرني على هذا الجهاز</label>
+    </div>
+    <div class="note" style="margin-top:6px">لا تفعّل «تذكرني» على جهاز مشترك.</div>
     <button class="btn ok" id="enter" type="button">دخول</button>
     <div class="err" id="loginErr"></div>
   </div>
@@ -120,6 +125,7 @@
     </div>
 
     <div class="center" id="result" style="display:none"></div>
+    <button class="btn ghost" id="forget" type="button" style="display:none">نسيان كلمة المرور على هذا الجهاز</button>
   </div>
 </main>
 
@@ -143,21 +149,41 @@
     $('fatal').textContent = msg; show('fatal', true);
   }
 
+  // ---------- تذكرني (تُحفظ كلمة المرور في متصفح هذا الجهاز فقط) ----------
+  const STORE_KEY = 'leave_approver_pw';
+  function getSaved() { try { return localStorage.getItem(STORE_KEY) || ''; } catch (e) { return ''; } }
+  function setSaved(v) {
+    try { if (v) localStorage.setItem(STORE_KEY, v); else localStorage.removeItem(STORE_KEY); } catch (e) {}
+  }
+
   // ---------- الدخول بكلمة المرور ----------
-  function enter() {
-    const pw = $('pw').value;
-    if (!pw) { $('loginErr').textContent = 'اكتب كلمة المرور'; return; }
+  function login(pw, auto) {
     $('enter').disabled = true; $('enter').textContent = 'جارٍ التحقق...';
     $('loginErr').textContent = '';
     api('getApprovalInfo', { token: TOKEN, password: pw })
       .then(function (info) {
-        PASSWORD = pw; $('pw').value = ''; $('pw').type = 'password'; $('showPw').checked = false;
+        PASSWORD = pw;
+        setSaved((auto || $('remember').checked) ? pw : '');
+        $('pw').value = ''; $('pw').type = 'password'; $('showPw').checked = false;
+        show('forget', !!getSaved());
         render(info);
       })
       .catch(function (e) {
         $('enter').disabled = false; $('enter').textContent = 'دخول';
-        $('loginErr').textContent = (e && e.message) || 'حدث خطأ، حاول مرة أخرى';
+        const msg = (e && e.message) || 'حدث خطأ، حاول مرة أخرى';
+        if (auto && msg.indexOf('غير صحيحة') > -1) {      // الكلمة المحفوظة لم تعد صالحة
+          setSaved(''); $('remember').checked = false;
+          $('loginErr').textContent = 'كلمة المرور المحفوظة لم تعد صالحة، اكتب كلمة المرور من جديد.';
+        } else {
+          $('loginErr').textContent = msg;
+        }
+        $('pw').focus();
       });
+  }
+  function enter() {
+    const pw = $('pw').value;
+    if (!pw) { $('loginErr').textContent = 'اكتب كلمة المرور'; return; }
+    login(pw, false);
   }
   $('enter').addEventListener('click', enter);
   $('showPw').addEventListener('change', function () {
@@ -165,6 +191,10 @@
     $('pw').focus();
   });
   $('pw').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') enter(); });
+  $('forget').addEventListener('click', function () {
+    setSaved('');
+    this.disabled = true; this.textContent = 'تم حذف كلمة المرور من هذا الجهاز';
+  });
 
   // ---------- عرض الطلب ----------
   function addRow(label, value) {
@@ -251,7 +281,9 @@
   if (!TOKEN) {
     fatal('الرابط غير صالح.');
   } else {
-    $('pw').focus();
+    const saved = getSaved();
+    if (saved) { $('remember').checked = true; login(saved, true); }   // دخول تلقائي
+    else $('pw').focus();
   }
 </script>
 </body>
