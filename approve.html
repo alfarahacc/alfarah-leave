@@ -125,7 +125,6 @@
     </div>
 
     <div class="center" id="result" style="display:none"></div>
-    <button class="btn ghost" id="forget" type="button" style="display:none">نسيان كلمة المرور على هذا الجهاز</button>
   </div>
 </main>
 
@@ -165,7 +164,6 @@
         PASSWORD = pw;
         setSaved((auto || $('remember').checked) ? pw : '');
         $('pw').value = ''; $('pw').type = 'password'; $('showPw').checked = false;
-        show('forget', !!getSaved());
         render(info);
       })
       .catch(function (e) {
@@ -191,10 +189,6 @@
     $('pw').focus();
   });
   $('pw').addEventListener('keydown', function (ev) { if (ev.key === 'Enter') enter(); });
-  $('forget').addEventListener('click', function () {
-    setSaved('');
-    this.disabled = true; this.textContent = 'تم حذف كلمة المرور من هذا الجهاز';
-  });
 
   // ---------- عرض الطلب ----------
   function addRow(label, value) {
