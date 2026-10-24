@@ -165,7 +165,7 @@
     res.innerHTML = '';
     const t = document.createElement('div'); t.className = 'tick'; t.textContent = ok ? '✓' : '✕';
     const m = document.createElement('div'); m.className = 'big';
-    m.textContent = ok ? 'تمت الموافقة على الطلب' : 'تم تسجيل عدم الموافقة';
+    m.textContent = ok ? ' تمت الموافقة على الطلب' : 'عدم الموافقة على الطلب';
     res.appendChild(t); res.appendChild(m);
     if (when) {
       const w = document.createElement('div'); w.style.color = 'var(--muted)';
