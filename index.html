@@ -239,9 +239,6 @@
       <div>رقم طلبك: <span class="num" id="num"></span></div>
       <p style="color:var(--muted)" id="mgrline">احتفظ بالرقم لمراجعة الإدارة.</p>
 
-      <a class="sbtn wa full" id="btnWaMgr" style="display:none;margin:10px 0 4px;text-align:center" rel="noopener">📲 إرسال الطلب عبر واتساب إلى المسؤول</a>
-      <p class="hint" id="waNote" style="display:none">جارٍ فتح واتساب... إن لم يفتح تلقائياً اضغط الزر الأخضر أعلاه، ثم اضغط إرسال داخل واتساب.</p>
-
       <div id="shareBox">
         <p class="hint">أرسل هذه الرسالة إلى المسؤول ليتخذ القرار:</p>
         <textarea id="msgText" readonly></textarea>
@@ -379,20 +376,33 @@
 
   function showError(t) { const e = $('err'); e.textContent = t; e.style.display = t ? 'block' : 'none'; }
 
+  // عدد الأيام بدون الجمعة
+  function countDays(f, t) {
+    let n = 0;
+    const d = new Date(f + 'T00:00:00'), e = new Date(t + 'T00:00:00');
+    for (; d <= e; d.setDate(d.getDate() + 1)) if (d.getDay() !== 5) n++;
+    return n;
+  }
+
   function updateDays() {
     const f = $('from').value, t = $('to').value;
     if (f) $('to').min = f;
     if (f && t) {
-      const n = Math.round((new Date(t) - new Date(f)) / 86400000) + 1;
-      if (n > 0) {
-        let msg = 'مدة الإجازة: <strong>' + n + '</strong> ' + (n === 1 ? 'يوم' : 'أيام');
-        if (balInfo && n > balInfo.remaining) {
-          msg += '<br><span class="over">⚠️ المدة تتجاوز رصيدك المتبقي (' + balInfo.remaining + ' يوم)</span>';
-        }
-        $('days').innerHTML = msg;
-      } else {
+      if (t < f) {
         $('days').textContent = 'تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء';
+        return;
       }
+      const n = countDays(f, t);
+      if (n === 0) {
+        $('days').textContent = 'الفترة المختارة كلها يوم جمعة، اختر تاريخاً آخر';
+        return;
+      }
+      let msg = 'مدة الإجازة: <strong>' + n + '</strong> ' + (n === 1 ? 'يوم' : 'أيام') +
+                ' <span style="font-size:.85rem">(بدون الجمعة)</span>';
+      if (balInfo && n > balInfo.remaining) {
+        msg += '<br><span class="over">⚠️ المدة تتجاوز رصيدك المتبقي (' + balInfo.remaining + ' يوم)</span>';
+      }
+      $('days').innerHTML = msg;
     } else {
       $('days').textContent = 'عدد أيام الإجازة سيظهر هنا بعد اختيار التاريخين';
     }
@@ -457,6 +467,7 @@
     }
     if (data.from < today) return showError('تاريخ البدء لا يمكن أن يكون في الماضي');
     if (data.to < data.from) return showError('تاريخ الانتهاء يجب أن يكون بعد تاريخ البدء');
+    if (countDays(data.from, data.to) === 0) return showError('الفترة المختارة كلها يوم جمعة، اختر تاريخاً آخر');
 
     $('btn').disabled = true; $('btn').textContent = 'جارٍ الإرسال...';
     api('submitRequest', data)
@@ -472,14 +483,6 @@
         }
         showShare(res);
         $('done').style.display = 'block';
-
-        // الانتقال إلى محادثة واتساب مدير القسم (الرابط جاهز من الخادم برقم المسؤول والرسالة)
-        if (res.wa) {
-          $('btnWaMgr').href = res.wa;
-          $('btnWaMgr').style.display = 'block';
-          $('waNote').style.display = 'block';
-          setTimeout(function () { window.location.href = res.wa; }, 1200);
-        }
       })
       .catch(function (e) {
         $('btn').disabled = false; $('btn').textContent = 'إرسال الطلب';
@@ -492,7 +495,6 @@
     hideBalance(); updateDays();
     shareMsg = ''; $('msgText').value = ''; $('shareBox').style.display = 'none'; $('copied').style.display = 'none';
     $('btn').disabled = false; $('btn').textContent = 'إرسال الطلب';
-    $('btnWaMgr').style.display = 'none'; $('waNote').style.display = 'none';
     $('done').style.display = 'none'; $('form').style.display = 'block';
   });
 </script>
