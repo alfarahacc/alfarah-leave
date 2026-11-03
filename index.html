@@ -239,6 +239,9 @@
       <div>رقم طلبك: <span class="num" id="num"></span></div>
       <p style="color:var(--muted)" id="mgrline">احتفظ بالرقم لمراجعة الإدارة.</p>
 
+      <a class="sbtn wa full" id="btnWaMgr" style="display:none;margin:10px 0 4px;text-align:center" rel="noopener">📲 إرسال الطلب عبر واتساب إلى المسؤول</a>
+      <p class="hint" id="waNote" style="display:none">جارٍ فتح واتساب... إن لم يفتح تلقائياً اضغط الزر الأخضر أعلاه، ثم اضغط إرسال داخل واتساب.</p>
+
       <div id="shareBox">
         <p class="hint">أرسل هذه الرسالة إلى المسؤول ليتخذ القرار:</p>
         <textarea id="msgText" readonly></textarea>
@@ -469,6 +472,14 @@
         }
         showShare(res);
         $('done').style.display = 'block';
+
+        // الانتقال إلى محادثة واتساب مدير القسم (الرابط جاهز من الخادم برقم المسؤول والرسالة)
+        if (res.wa) {
+          $('btnWaMgr').href = res.wa;
+          $('btnWaMgr').style.display = 'block';
+          $('waNote').style.display = 'block';
+          setTimeout(function () { window.location.href = res.wa; }, 1200);
+        }
       })
       .catch(function (e) {
         $('btn').disabled = false; $('btn').textContent = 'إرسال الطلب';
@@ -481,6 +492,7 @@
     hideBalance(); updateDays();
     shareMsg = ''; $('msgText').value = ''; $('shareBox').style.display = 'none'; $('copied').style.display = 'none';
     $('btn').disabled = false; $('btn').textContent = 'إرسال الطلب';
+    $('btnWaMgr').style.display = 'none'; $('waNote').style.display = 'none';
     $('done').style.display = 'none'; $('form').style.display = 'block';
   });
 </script>
